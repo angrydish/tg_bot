@@ -2,6 +2,7 @@ import time
 import logging
 import requests
 import json
+import os
 
 from aiogram import Bot, Dispatcher, executor, types
 from selenium import webdriver
@@ -12,8 +13,10 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ParseMode
+from dotenv import load_dotenv
 
-TOKEN = "token"
+load_dotenv()
+TOKEN = os.getenv('TOKEN_TG_BOT')
 
 logging.basicConfig(level=logging.INFO)
 

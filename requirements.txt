@@ -15,6 +15,7 @@ magic-filter==1.0.9
 multidict==6.0.4
 outcome==1.2.0
 PySocks==1.7.1
+python-dotenv==1.0.0
 pytz==2023.3
 requests==2.28.2
 selenium==4.8.3
