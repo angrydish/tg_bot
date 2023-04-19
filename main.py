@@ -3,6 +3,7 @@ import logging
 import requests
 import json
 import os
+import typing
 
 from aiogram import Bot, Dispatcher, executor, types
 from selenium import webdriver
@@ -12,7 +13,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ParseMode
+from aiogram.types import ParseMode, ContentTypes
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -59,6 +60,20 @@ async def get_zapros(message: types.Message):
     {dict}
     """
     await bot.send_message(message.from_user.id, otvet)
+
+@dp.message_handler(content_types=ContentTypes.DOCUMENT)
+async def unknown_message(message: types.Message):
+    file_name = message.document.file_name
+    #my_file = open(file_name, "w+")
+    print(message.document)
+    result = await bot.download_file_by_id(message.document.file_id)
+    print(bytes(result.read()))
+    #await bot.download_file('.')
+
+    #typing.BinaryIO
+    #my_file.write(message.document)
+    #my_file.close()
+    await bot.send_message(message.from_user.id, file_name)
 
 
 @dp.message_handler(commands=['bot_ip'])
