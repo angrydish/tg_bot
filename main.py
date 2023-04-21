@@ -27,13 +27,17 @@ bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot=bot, storage=storage)
 
-text = """
-Тестовый текст
-для многострочного сообщения
-ага, а вот здесь {} имя пользователя
+EntryText = """
+Привет, {}, я бот, который умеет хранить твои файлы.
+Для того, чтобы ты мог мною пользоваться, тебе необходимо пройти авторизацию.
+Напиши /login, если у тебя уже есть аккаунт.
+Напиши /register, если у тебя еще нет аккаунта.
+"""
 
-а тут твое сообщение:
-{}
+HelpText = """
+Доступные команды:
+/login - авторизация в боте
+/register - регистрация в боте
 """
 
 class Form(StatesGroup):
@@ -45,23 +49,25 @@ async def start_handler(message: types.Message):
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
     logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
-    # await message.reply(f'Privet, {user_full_name}') - ответ на сообщение
-    # for i in range(1):
-    # time.sleep(2)
-    await bot.send_message(user_id, text.format(message.from_user.username, message.text))  # прислать сообщение
+    await bot.send_message(user_id, EntryText.format(message.from_user.username))  # прислать сообщение
 
 
-@dp.message_handler(commands=['ftjgvnyhfhcjtgvytgyhjfrtgyhrffjtgyhrtghfyrtghfyj'])
-async def get_zapros(message: types.Message):
-    myacc_csgo = requests.get("https://steamcommunity.com/inventory/76561198259026080/730/2?l=russian&count=1000")
-    dict = json.loads(myacc_csgo.text)
-    logging.info(f'wants steam {time.asctime()} {message.from_user.username}')
-    otvet = f"""
-    {myacc_csgo}
+@dp.message_handler(commands=['help'])
+async def start_handler(message: types.Message):
+    user_id = message.from_user.id
+    user_full_name = message.from_user.full_name
+    user_username = message.from_user.username
+    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id, HelpText.format(message.from_user.username))  # прислать сообщение
 
-    {dict}
-    """
-    await bot.send_message(message.from_user.id, otvet)
+@dp.message_handler(commands=['login'])
+async def start_handler(message: types.Message):
+    user_id = message.from_user.id
+    user_full_name = message.from_user.full_name
+    user_username = message.from_user.username
+    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id, HelpText.format(message.from_user.username))  # прислать сообщение
+
 
 @dp.message_handler(content_types=ContentTypes.DOCUMENT)
 async def unknown_message(message: types.Message):
@@ -74,8 +80,8 @@ async def unknown_message(message: types.Message):
     #print(bytes(result.read()))
     #fail = InputFile(filename="aboba", path_or_bytesio=result)
     #print(fail)
-    fail = InputFile(filename="qwe", path_or_bytesio=BytesIO(bytes(result.read())))
-    result = bytes(result.read())
+    fail = InputFile(filename=file_name, path_or_bytesio=BytesIO(bytes(result.read())))
+    #result = bytes(result.read())
     #print(result)
     #await bot.download_file('.')
     #typing.BinaryIO
@@ -86,14 +92,6 @@ async def unknown_message(message: types.Message):
     #await bot.send_document(message.from_user.id, document=InputFile(filename=message.document.file_name, path_or_bytesio=await bot.download_file_by_id(message.document.file_id)))
     await bot.send_document(message.from_user.id, document=fail)
 
-
-
-@dp.message_handler(commands=['bot_ip'])
-async def get_ip(message: types.Message):
-    my_ip = requests.get("http://api.myip.com")
-    logging.info(f'wants ip {time.asctime()} {message.from_user.username}')
-    print(my_ip.text)
-    await bot.send_message(message.from_user.id, my_ip.text)
 
 if __name__ == '__main__':
     print('bebra')
