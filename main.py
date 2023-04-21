@@ -65,8 +65,23 @@ async def start_handler(message: types.Message):
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
+    LoginMessage = """
+    Привет, {}, ты попал в эндпоинт /login.
+    """
     logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
-    await bot.send_message(user_id, HelpText.format(message.from_user.username))  # прислать сообщение
+    await bot.send_message(user_id, LoginMessage.format(message.from_user.username))  # прислать сообщение
+
+
+@dp.message_handler(commands=['register'])
+async def start_handler(message: types.Message):
+    user_id = message.from_user.id
+    user_full_name = message.from_user.full_name
+    user_username = message.from_user.username
+    RegisterMessage = """
+    Привет, {}, ты попал в эндпоинт /register.
+    """
+    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id, RegisterMessage.format(message.from_user.username))  # прислать сообщение
 
 
 @dp.message_handler(content_types=ContentTypes.DOCUMENT)
