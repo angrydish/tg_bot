@@ -36,6 +36,11 @@ class Form(StatesGroup):
 
 @dp.message_handler(commands=['start'])
 async def start_handler(message: types.Message):
+    """
+    Стартовый хендлер для всех пользователей
+    :param message:
+    :return:
+    """
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
@@ -46,7 +51,12 @@ async def start_handler(message: types.Message):
 
 
 @dp.message_handler(commands=['help'])
-async def start_handler(message: types.Message):
+async def help_handler(message: types.Message):
+    """
+    Функция, обрабатывающая запрос на вывод справки по боту
+    :param message:
+    :return:
+    """
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
@@ -56,7 +66,12 @@ async def start_handler(message: types.Message):
                            HELPTEXT.format(message.from_user.username))  # прислать сообщение
 
 @dp.message_handler(commands=['login'])
-async def start_handler(message: types.Message):
+async def login_handler(message: types.Message):
+    """
+    Функция, обрабатывающая авторизацию пользователей
+    :param message:
+    :return:
+    """
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
@@ -70,7 +85,12 @@ async def start_handler(message: types.Message):
 
 
 @dp.message_handler(commands=['register'])
-async def start_handler(message: types.Message):
+async def register_handler(message: types.Message):
+    """
+    Функция, обрабатывающая регистрацию пользователей
+    :param message:
+    :return:
+    """
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
