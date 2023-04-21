@@ -76,8 +76,13 @@ async def start_handler(message: types.Message):
 
 
 @dp.message_handler(content_types=ContentTypes.DOCUMENT)
-async def unknown_message(message: types.Message):
-    logging.info(f'uploading file to server')
+async def document_sent_by_user(message: types.Message):
+    """
+    Функция, которая принимает пользовательские файлы
+    :param message:
+    :return nothing:
+    """
+    logging.info('uploading file to server')
     file_name = message.document.file_name
     #my_file = open(file_name, "w+")
     print(message.document)
