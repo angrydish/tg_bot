@@ -1,21 +1,12 @@
 import time
 import logging
 from io import BytesIO
-
-import requests
-import json
 import os
-import typing
 
 from aiogram import Bot, Dispatcher, executor, types
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import aiogram.utils.markdown as md
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ParseMode, ContentTypes, InputFile
+from aiogram.types import ContentTypes, InputFile
 from dotenv import load_dotenv
 
 load_dotenv()
