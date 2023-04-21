@@ -18,14 +18,14 @@ bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot=bot, storage=storage)
 
-EntryText = """
+ENTRYTEXT = """
 Привет, {}, я бот, который умеет хранить твои файлы.
 Для того, чтобы ты мог мною пользоваться, тебе необходимо пройти авторизацию.
 Напиши /login, если у тебя уже есть аккаунт.
 Напиши /register, если у тебя еще нет аккаунта.
 """
 
-HelpText = """
+HELPTEXT = """
 Доступные команды:
 /login - авторизация в боте
 /register - регистрация в боте
@@ -39,8 +39,10 @@ async def start_handler(message: types.Message):
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
-    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
-    await bot.send_message(user_id, EntryText.format(message.from_user.username))  # прислать сообщение
+    logging.info(f'{time.asctime()} {user_id=}'
+                 f' {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id,
+                           ENTRYTEXT.format(message.from_user.username))  # прислать сообщение
 
 
 @dp.message_handler(commands=['help'])
@@ -48,8 +50,10 @@ async def start_handler(message: types.Message):
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
-    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
-    await bot.send_message(user_id, HelpText.format(message.from_user.username))  # прислать сообщение
+    logging.info(f'{time.asctime()} {user_id=} '
+                 f'{user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id,
+                           HELPTEXT.format(message.from_user.username))  # прислать сообщение
 
 @dp.message_handler(commands=['login'])
 async def start_handler(message: types.Message):
@@ -59,8 +63,10 @@ async def start_handler(message: types.Message):
     login_message = """
     Привет, {}, ты попал в эндпоинт /login.
     """
-    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
-    await bot.send_message(user_id, login_message.format(message.from_user.username))  # прислать сообщение
+    logging.info(f'{time.asctime()} {user_id=}'
+                 f' {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id,
+                           login_message.format(message.from_user.username))  # прислать сообщение
 
 
 @dp.message_handler(commands=['register'])
@@ -71,8 +77,10 @@ async def start_handler(message: types.Message):
     register_message = """
     Привет, {}, ты попал в эндпоинт /register.
     """
-    logging.info(f'{time.asctime()} {user_id=} {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
-    await bot.send_message(user_id, register_message.format(message.from_user.username))  # прислать сообщение
+    logging.info(f'{time.asctime()} {user_id=}'
+                 f' {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
+    await bot.send_message(user_id,
+                           register_message.format(message.from_user.username))  # прислать сообщение
 
 
 @dp.message_handler(content_types=ContentTypes.DOCUMENT)
