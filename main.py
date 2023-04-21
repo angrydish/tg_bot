@@ -44,7 +44,7 @@ async def start_handler(message: types.Message):
     user_id = message.from_user.id
     user_full_name = message.from_user.full_name
     user_username = message.from_user.username
-    logging.info(f'{time.asctime()} {user_id=}'
+    logging.info(f'%{time.asctime()} %{user_id=}'
                  f' {user_full_name=} {user_username=}\nmessage:"{message.text}" \n')
     await bot.send_message(user_id,
                            ENTRYTEXT.format(message.from_user.username))  # прислать сообщение
