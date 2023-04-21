@@ -1,5 +1,7 @@
 import time
 import logging
+from io import BytesIO
+
 import requests
 import json
 import os
@@ -72,6 +74,7 @@ async def unknown_message(message: types.Message):
     #print(bytes(result.read()))
     #fail = InputFile(filename="aboba", path_or_bytesio=result)
     #print(fail)
+    fail = InputFile(filename="qwe", path_or_bytesio=BytesIO(bytes(result.read())))
     result = bytes(result.read())
     #print(result)
     #await bot.download_file('.')
@@ -81,7 +84,7 @@ async def unknown_message(message: types.Message):
     await bot.send_message(message.from_user.id, file_name)
     #await bot.send_file(message.document.mime_type,file=result)
     #await bot.send_document(message.from_user.id, document=InputFile(filename=message.document.file_name, path_or_bytesio=await bot.download_file_by_id(message.document.file_id)))
-    await bot.send_document(message.from_user.id, document=result)
+    await bot.send_document(message.from_user.id, document=fail)
 
 
 
