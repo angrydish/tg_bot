@@ -34,6 +34,10 @@ HELPTEXT = """
 class Form(StatesGroup):
     choice = State()  # Will be represented in storage as 'Form:name'
 
+class Auth(StatesGroup):
+    waiting_for_username = State()
+    waiting_for_password = State()
+
 @dp.message_handler(commands=['start'])
 async def start_handler(message: types.Message):
     """
