@@ -1,7 +1,8 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from config import host, port, password, db_name, user
+import models.models
+from db.config import host, port, password, database, user
 from models.models import *
 # try:
 #     connection = psycopg2.connect(
@@ -43,7 +44,7 @@ class DB:
     def pack_data(self, **kwargs):
         return User(kwargs)
 
-    def execute_one(self, query_name: str, params: dict = None, model: list_of_models = None):
+    def execute_one(self, query_name: str, params: dict = None, model: list_of_models = None) -> models.models.get_classes():
         try:
             with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 query = self.read_query_name(query_name)
@@ -53,8 +54,12 @@ class DB:
                 self.connection.commit()
                 if data is None:
                     return None
-                return model(data)
+                if model is not None:
+                    return model(data)
+                else:
+                    return data
         except Exception as e:
+            self.connection.rollback()
             print(f'Execute one error!\n {e}')
 
     def execute_all(self, query_name: str, params: dict = None, model: list_of_models = None):
@@ -69,6 +74,7 @@ class DB:
                     return None
                 return [self.pack_data(**_) for _ in data]
         except Exception as e:
+            self.connection.rollback()
             print(f'Execute all error!\n {e}')
 
     def execute_none(self, query_name: str, params: dict = None):
@@ -78,12 +84,13 @@ class DB:
                 cursor.execute(query, params)
                 self.connection.commit()
         except Exception as e:
+            self.connection.rollback()
             print(f'Execute none error!\n{e}')
 
 
 
-a = {'host': host, 'port': port, 'user': user, 'password': password, 'database': db_name}
-db = DB(a)
+#a = {'host': host, 'port': port, 'user': user, 'password': password, 'database': db_name}
+#db = DB(a)
 
 # db.execute_none("""CREATE TABLE IF NOT EXISTS "users" (
 #   "id" SERIAL PRIMARY KEY,
@@ -107,9 +114,9 @@ db = DB(a)
 # db.execute_none("""
 # insert into users (username, password) values ('bebra','123');
 # """)
-
-man = db.execute_one('read_user', params={'username': 'bebra'}, model=User)
-print(man)
+#db.execute_none('create_database')
+#man = db.execute_one('read_user', params={'username': 'bebra'}, model=User)
+#print(man)
 # users = db.execute_all('read_all_users')
 # for user in users:
 #     print(user)

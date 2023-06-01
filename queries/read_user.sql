@@ -1,1 +1,1 @@
-select * from users where username = %(username)s;
+select id, username, password from users where username = %(username)s;
