@@ -1,0 +1,1 @@
+select id, owner_user_id from file where id=%(file_id)s

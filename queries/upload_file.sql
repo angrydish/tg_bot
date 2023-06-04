@@ -1,1 +1,1 @@
-insert into file(name, owner_telegram_id, content, size, created_at) values(%(name)s,%(owner_telegram_id)s, %(content)s, %(size)s, %(created_at)s)
+insert into file(name, owner_user_id, owner_telegram_id, content, size, created_at) values(%(name)s, %(owner_user_id)s, %(owner_telegram_id)s, %(content)s, %(size)s, %(created_at)s)

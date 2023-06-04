@@ -1,0 +1,1 @@
+select id, name, owner_telegram_id, owner_user_id, content, size, created_at from file where owner_user_id=%(owner_user_id)s

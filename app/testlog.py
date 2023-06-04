@@ -14,7 +14,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Chat, ContentTypes, InputFile
-
+from security import sha256, check_sha256_password
 
 from dotenv import load_dotenv
 
@@ -31,21 +31,20 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 db = DB({
-    'host':host,
-    'port':port,
-    'database':database,
-    'user':user,
-    'password':password})
+    'host': host,
+    'port': port,
+    'database': database,
+    'user': user,
+    'password': password})
 print(db.execute_one('test_query'))
 db.execute_none('create_database')
-
 
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard.add(KeyboardButton("/login"))
 keyboard.add(KeyboardButton("/register"))
 keyboard.add(KeyboardButton("/delete"))
 
-keyboard_cancel=ReplyKeyboardMarkup(resize_keyboard=True)
+keyboard_cancel = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard_cancel.add("/cancel")
 
 
@@ -53,20 +52,21 @@ keyboard_cancel.add("/cancel")
 class Auth(StatesGroup):
     waiting_for_username = State()
     waiting_for_password = State()
+    logged_in = State()
+    logged_out = State()
+
 
 class Reg(StatesGroup):
     wait_for_username = State()
     wait_for_password = State()
     wait_for_password_2 = State()
 
-class AuthorizedPerson(StatesGroup):
-    wait_for_upload_file = State()
-    wait_for_download_file = State()
 
 # Создаем хэндлер для команды /start, которая запускает процесс авторизации
 
 bot_messages = []
 from_bot_messages = []
+
 
 def check_and_delete():
     print(bot_messages)
@@ -76,10 +76,51 @@ def check_and_delete():
     #     pass
 
 
+@dp.message_handler(state=Auth.logged_in, content_types=['document', 'audio', 'video'])
+async def document_sent_by_user(message: types.Message, state: FSMContext):
+    """
+    Функция, которая принимает пользовательские файлы
+    :param message:
+    :return nothing:
+    """
+    file_src = object
+    content_type = message.content_type
+    # get file object by content type
+    if content_type == "document":
+        file_src = message.document
+    elif content_type == "audio":
+        file_src = message.audio
+    elif content_type == "video":
+        file_src = message.video
+    data = await state.get_data()
+    logging.info('uploading file to server')
+    file_name = file_src.file_name
+    print(file_name)
+    print(message.content_type)
+    print(file_src)
+    # print(message.audio.)
+    # result = await bot.download_file_by_id(message.audio.file_id)
+    # fail = InputFile(filename=file_name, path_or_bytesio=BytesIO(bytes(result.read()))) # получили файл, можно загрузить в бд
+
+    print('1st stage')
+    file = await bot.get_file(file_src.file_id)
+    print('2nd stage')
+    file = await bot.download_file(file.file_path)
+    xd = bytes.fromhex(file.read().hex())
+
+    print('uploading')
+    # result1 = io.BytesIO
+    db.execute_none('upload_file',
+                    {'name': file_name, 'owner_user_id': data.get('user_id'), 'owner_telegram_id': message.from_user.id, 'content': xd,
+                     'size': file_src.file_size, 'created_at': datetime.now()})
+    print('uploaded')
+    await message.answer('Файл загружен!')
+    # await bot.send_message(message.from_user.id, file_name)
+    # await bot.send_document(message.from_user.id, document=fail)
+
 
 @dp.message_handler(commands="delete")
 async def delete_messages(message: types.Message):
-
     chat_id = message.chat.id
     # Добавляем идентификатор команды в список
     bot_messages.append(message)
@@ -90,7 +131,7 @@ async def delete_messages(message: types.Message):
         except:
             pass
     for message in from_bot_messages:
-        #print(message_id)
+        # print(message_id)
         try:
             await message.delete()
         except:
@@ -115,110 +156,63 @@ async def delete_messages(message: types.Message):
 async def login(message: types.Message):
     bot_messages.append(message)
     a = message.date
-    b=datetime.now()
+    b = datetime.now()
     print(a, b, sep="\n")
-    print(b-a)
+    print(b - a)
     # Отправляем приветственное сообщение и просим ввести имя пользователя
     msg = await message.answer("Привет! Добро пожаловать в мой бот.", reply_markup=keyboard)
     from_bot_messages.append(msg)
     # Переводим пользователя в состояние ожидания имени пользователя
 
 
-
-@dp.message_handler(content_types=['document','audio','video'])
-async def document_sent_by_user(message: types.Message):
+@dp.message_handler(commands="get", state=Auth.logged_in)
+async def send_document(message: types.Message, state=FSMContext):
     """
     Функция, которая принимает пользовательские файлы
     :param message:
     :return nothing:
     """
-    file_src = object
-    content_type = message.content_type
-    # get file object by content type
-    if content_type == "document":
-        file_src = message.document
-    elif content_type == "audio":
-        file_src = message.audio
-    elif content_type == "video":
-        file_src = message.video
+    args = message.text.split(sep=" ")
+    data = await state.get_data()
+    infa: User_File = db.execute_one('check_file_owner', {'file_id': args[1]}, model=User_File)
+    if data.get('user_id') == infa.owner_user_id:
+        logging.info('sending file from server to user')
+        file: User_File = db.execute_one('read_file', params={'id': args[1]}, model=User_File)
+        # print(bytes(file.content))
+        fail = InputFile(filename=file.name, path_or_bytesio=BytesIO(bytes(file.content)))
+        await bot.send_document(message.from_user.id, document=fail)
+    else:
+        await message.answer("аяяй низя так делать")
 
-
-    logging.info('uploading file to server')
-    file_name = file_src.file_name
-    print(file_name)
-    print( message.content_type)
-    print(file_src)
-    #print(message.audio.)
-    #result = await bot.download_file_by_id(message.audio.file_id)
-    #fail = InputFile(filename=file_name, path_or_bytesio=BytesIO(bytes(result.read()))) # получили файл, можно загрузить в бд
-
-    print('1st stage')
-    file = await bot.get_file(file_src.file_id)
-    print('2nd stage')
-    file = await bot.download_file(file.file_path)
-    xd = bytes.fromhex( file.read().hex())
-
-    print('uploading')
-    #result1 = io.BytesIO
-    db.execute_none('upload_file', {'name': file_name, 'owner_telegram_id': message.from_user.id, 'content': xd, 'size': file_src.file_size, 'created_at': datetime.now()})
-    print('uploaded')
-    await message.answer('Файл загружен!')
-    # await bot.send_message(message.from_user.id, file_name)
-    # await bot.send_document(message.from_user.id, document=fail)
-@dp.message_handler(commands="get")
-async def send_document(message: types.Message):
-    """
-    Функция, которая принимает пользовательские файлы
-    :param message:
-    :return nothing:
-    """
-    logging.info('sending file from server to user')
-    file: User_File = db.execute_one('read_file', params={'id': message.text.split(sep=" ")[-1]}, model=User_File)
-    #print(bytes(file.content))
-    fail = InputFile(filename=file.name, path_or_bytesio=BytesIO(bytes(file.content)))
-    await bot.send_document(message.from_user.id, document=fail)
-
-
-@dp.message_handler(commands="login")
-async def login(message: types.Message):
-    bot_messages.append(message)
-    # Отправляем приветственное сообщение и просим ввести имя пользователя
-    msg=await message.answer("Привет! Добро пожаловать в мой бот. Для начала давайте авторизуемся.", reply_markup=keyboard_cancel)
-    from_bot_messages.append(msg)
-    msg=await message.answer("Пожалуйста, введите ваше имя пользователя.")
-    from_bot_messages.append(msg)
-    # Переводим пользователя в состояние ожидания имени пользователя
-    await Auth.waiting_for_username.set()
-
-@dp.message_handler(commands="register")
-async def register(message: types.Message):
-    bot_messages.append(message)
-    # Отправляем приветственное сообщение и просим ввести имя пользователя
-    msg=await message.answer("Привет! Добро пожаловать в мой бот. Для начала давайте зарегистрируемся.", reply_markup=keyboard_cancel)
-    from_bot_messages.append(msg)
-    msg=await message.answer("Пожалуйста, введите ваше имя пользователя.")
-    from_bot_messages.append(msg)
-    # Переводим пользователя в состояние ожидания имени пользователя
-    await Reg.wait_for_username.set()
-
-@dp.message_handler(commands="cancel", state=[Auth,Reg])
+@dp.message_handler(commands="cancel", state=[Auth.waiting_for_username, Auth.waiting_for_password, Reg])
 async def cancel(message: types.Message, state: FSMContext):
     bot_messages.append(message)
     # Отправляем сообщение об отмене
-    msg=await message.answer("Действие отменено!", reply_markup=keyboard)
+    msg = await message.answer("Действие отменено!", reply_markup=keyboard)
     from_bot_messages.append(msg)
     # Завершаем процесс и очищаем хранилище
     await state.finish()
 
 
-#--------------------------------------------registration--------------------------------------------
+# --------------------------------------------registration-begin------------------------------------------
+@dp.message_handler(commands="register")
+async def register(message: types.Message):
+    bot_messages.append(message)
+    # Отправляем приветственное сообщение и просим ввести имя пользователя
+    msg = await message.answer("Привет! Добро пожаловать в мой бот. Для начала давайте зарегистрируемся.",
+                               reply_markup=keyboard_cancel)
+    from_bot_messages.append(msg)
+    msg = await message.answer("Пожалуйста, введите ваше имя пользователя.")
+    from_bot_messages.append(msg)
+    # Переводим пользователя в состояние ожидания имени пользователя
+    await Reg.wait_for_username.set()
 @dp.message_handler(state=Reg.wait_for_username)
 async def username(message: types.Message, state: FSMContext):
     bot_messages.append(message)
     # Получаем имя пользователя из сообщения
     usr = message.text
     if re.match("^[a-zA-Z0-9_.-]+$", usr) is None:
-        msg=await message.answer("В нике обнаружены недопустимые символы. Повторите попытку.")
+        msg = await message.answer("В нике обнаружены недопустимые символы. Повторите попытку.")
         from_bot_messages.append(msg)
         await Reg.wait_for_username.set()
         return
@@ -226,17 +220,18 @@ async def username(message: types.Message, state: FSMContext):
     chel: User = db.execute_one('read_user', {'username': usr}, model=User)
     print(chel)
     if chel is not None:
-        msg=await message.answer("Это имя уже занято! Попробуйте другое.")
+        msg = await message.answer("Это имя уже занято! Попробуйте другое.")
         from_bot_messages.append(msg)
         await Reg.wait_for_username.set()
     else:
         # Сохраняем его во временном хранилище
         await state.update_data(username=usr)
         # Просим ввести пароль
-        msg=await message.answer("Пожалуйста, введите ваш пароль.")
+        msg = await message.answer("Пожалуйста, введите ваш пароль.")
         from_bot_messages.append(msg)
         # Переводим пользователя в состояние ожидания пароля
         await Reg.wait_for_password.set()
+
 
 @dp.message_handler(state=Reg.wait_for_password)
 async def password(message: types.Message, state: FSMContext):
@@ -246,10 +241,11 @@ async def password(message: types.Message, state: FSMContext):
     # Сохраняем его во временном хранилище
     await state.update_data(password=password)
     # Просим ввести пароль
-    msg=await message.answer("Пожалуйста, повторите ваш пароль.")
+    msg = await message.answer("Пожалуйста, повторите ваш пароль.")
     from_bot_messages.append(msg)
     # Переводим пользователя в состояние ожидания пароля
     await Reg.wait_for_password_2.set()
+
 
 @dp.message_handler(state=Reg.wait_for_password_2)
 async def password_2(message: types.Message, state: FSMContext):
@@ -259,23 +255,39 @@ async def password_2(message: types.Message, state: FSMContext):
     data = await state.get_data()
     if data.get('password') == data.get('password_2'):
         try:
-            db.execute_none('create_user', {'telegram_id': message.from_user.id,'username': data.get('username'), 'password': data.get('password')})
+            db.execute_none('create_user', {'telegram_id': message.from_user.id, 'username': data.get('username'),
+                                            'password': sha256(data.get('password'))})
             msg = await message.answer(f"Поздравляю, {data.get('username')}, Вы зарегистрировались!")
             from_bot_messages.append(msg)
+            chel: User = db.execute_one('read_user', {'username': data.get('username')}, model=User)
+            await state.update_data(user_id=chel.id)
+            await Auth.logged_in.set()
         except Exception as e:
             await message.answer(e)
             print(e)
-            msg=await message.answer(f"Что-то пошло не так, {data.get('username')}, обратитесь к админу.")
+            msg = await message.answer(f"Что-то пошло не так, {data.get('username')}, обратитесь к админу.")
             from_bot_messages.append(msg)
-        await state.finish()
+            await state.finish()
     else:
-        msg=await message.answer(f"Пароли не совпадают. Повторите попытку.")
+        msg = await message.answer(f"Пароли не совпадают. Повторите попытку.")
         from_bot_messages.append(msg)
-        msg=await message.answer(f"Введите пароль.")
+        msg = await message.answer(f"Введите пароль.")
         from_bot_messages.append(msg)
         await Reg.wait_for_password.set()
+# --------------------------------------------registration-end------------------------------------------
 
-#-------------------------------------------authorization-------------------------------------------
+# -------------------------------------------authorization-begin-----------------------------------------
+@dp.message_handler(commands="login")
+async def login(message: types.Message):
+    bot_messages.append(message)
+    # Отправляем приветственное сообщение и просим ввести имя пользователя
+    msg = await message.answer("Привет! Добро пожаловать в мой бот. Для начала давайте авторизуемся.",
+                               reply_markup=keyboard_cancel)
+    from_bot_messages.append(msg)
+    msg = await message.answer("Пожалуйста, введите ваше имя пользователя.")
+    from_bot_messages.append(msg)
+    # Переводим пользователя в состояние ожидания имени пользователя
+    await Auth.waiting_for_username.set()
 # Создаем хэндлер для состояния ожидания имени пользователя
 @dp.message_handler(state=Auth.waiting_for_username)
 async def username(message: types.Message, state: FSMContext):
@@ -283,23 +295,24 @@ async def username(message: types.Message, state: FSMContext):
     # Получаем имя пользователя из сообщения
     usr = message.text
     if re.match("^[a-zA-Z0-9_.-]+$", usr) is None:
-        msg=await message.answer("В нике обнаружены недопустимые символы. Повторите попытку.")
+        msg = await message.answer("В нике обнаружены недопустимые символы. Повторите попытку.")
         from_bot_messages.append(msg)
         await Auth.waiting_for_username.set()
         return
     # Сохраняем его во временном хранилище
     await state.update_data(username=usr)
     # Просим ввести пароль
-    chel: User = db.execute_one('read_user', {'username' : usr}, model=User)
+    chel: User = db.execute_one('read_user', {'username': usr}, model=User)
     if chel is None:
-        msg=await message.answer("Пользователь не найден. Повторите попытку.")
+        msg = await message.answer("Пользователь не найден. Повторите попытку.")
         from_bot_messages.append(msg)
         await Auth.waiting_for_username.set()
     else:
-        msg=await message.answer("Пожалуйста, введите ваш пароль.")
+        msg = await message.answer("Пожалуйста, введите ваш пароль.")
         from_bot_messages.append(msg)
         # Переводим пользователя в состояние ожидания пароля
         await Auth.waiting_for_password.set()
+
 
 # Создаем хэндлер для состояния ожидания пароля
 @dp.message_handler(state=Auth.waiting_for_password)
@@ -310,21 +323,49 @@ async def password(message: types.Message, state: FSMContext):
     # Получаем имя пользователя из временного хранилища
     await state.update_data(password=pswd)
     data = await state.get_data()
-    #usrnm = data.get("username")
+    # usrnm = data.get("username")
     # Проверяем правильность имени пользователя и пароля (здесь можно использовать свою логику проверки)
     chel: User = db.execute_one('read_user', {'username': data.get('username')}, User)
     print(chel)
-    if chel is not None and chel.username == data.get("username") and chel.password == data.get("password"):
+    if chel is not None and chel.username == data.get("username") and chel.password == sha256(data.get("password")):
         # Если все верно, то отправляем сообщение об успешной авторизации и завершаем процесс
-        msg=await message.answer("Поздравляю! Вы успешно авторизовались.")
+        msg = await message.answer("Поздравляю! Вы успешно авторизовались.")
+        await state.update_data(user_id=chel.id)
+        data = await state.get_data()
+        print(data)
         from_bot_messages.append(msg)
-        await state.finish()
+        await Auth.logged_in.set()
     else:
         # Если что-то не верно, то отправляем сообщение об ошибке и просим повторить попытку
-        msg=await message.answer("Неверное имя пользователя или пароль. Пожалуйста, попробуйте еще раз.")
+        msg = await message.answer("Неверное имя пользователя или пароль. Пожалуйста, попробуйте еще раз.")
         from_bot_messages.append(msg)
         # Переводим пользователя в состояние ожидания имени пользователя
         await Auth.waiting_for_username.set()
+
+
+# -------------------------------------------authorization-end-----------------------------------------
+
+@dp.message_handler(state=Auth.logged_in, commands="list")
+async def user_logged_in(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    print(data.get('user_id'))
+    all_files: list[User_File] = db.execute_all('read_user_files', {'owner_user_id': data.get('user_id')}, model=User_File)
+    await message.answer("Список доступных файлов:")
+    for file in all_files:
+        await message.answer(f"""
+        Файл №{file.id}
+        Имя: {file.name}
+        Размер: {file.size / 1024 / 1024 } мегабайт
+        Создан: {file.created_at}
+        Чтобы скачать, введите /get {file.id}
+        """)
+
+@dp.message_handler(state=Auth.logged_in, commands="logout")
+async def user_logout(message: types.Message, state: FSMContext):
+    await message.answer("logged out.")
+    await state.finish()
+
+
 
 @dp.message_handler()
 async def delete_messages(message: types.Message):

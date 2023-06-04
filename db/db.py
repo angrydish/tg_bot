@@ -63,7 +63,7 @@ class DB:
             self.connection.rollback()
             raise Exception(f'Execute one error!\n {e}')
 
-    def execute_all(self, query_name: str, params: dict = None, model: list_of_models = None):
+    def execute_all(self, query_name: str, params: dict = None, model: list_of_models = None) -> models.models.get_classes():
         try:
             with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 query = self.read_query_name(query_name)
@@ -73,7 +73,9 @@ class DB:
                 self.connection.commit()
                 if data is None:
                     return None
-                return [self.pack_data(**_) for _ in data]
+                #print("\n\n\n",data)
+                #[print(_) for _ in data]
+                return [model(_) for _ in data]
         except Exception as e:
             self.connection.rollback()
             raise Exception(f'Execute all error!\n {e}')
