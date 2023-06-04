@@ -39,7 +39,7 @@ class DB:
                 query = file.read()
                 return str(query)
         except Exception as e:
-            print(f'Query exception!\n{e}')
+            raise Exception(f'Query exception!\n{e}')
 
     def pack_data(self, **kwargs):
         return User(kwargs)
@@ -55,12 +55,13 @@ class DB:
                 if data is None:
                     return None
                 if model is not None:
+                    print(data)
                     return model(data)
                 else:
                     return data
         except Exception as e:
             self.connection.rollback()
-            print(f'Execute one error!\n {e}')
+            raise Exception(f'Execute one error!\n {e}')
 
     def execute_all(self, query_name: str, params: dict = None, model: list_of_models = None):
         try:
@@ -75,7 +76,7 @@ class DB:
                 return [self.pack_data(**_) for _ in data]
         except Exception as e:
             self.connection.rollback()
-            print(f'Execute all error!\n {e}')
+            raise Exception(f'Execute all error!\n {e}')
 
     def execute_none(self, query_name: str, params: dict = None):
         try:
@@ -85,7 +86,7 @@ class DB:
                 self.connection.commit()
         except Exception as e:
             self.connection.rollback()
-            print(f'Execute none error!\n{e}')
+            raise Exception(f'Execute none error!\n{e}')
 
 
 
