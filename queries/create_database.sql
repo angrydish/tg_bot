@@ -15,3 +15,23 @@ CREATE TABLE IF NOT EXISTS file (
   created_at timestamp
 );
 ALTER TABLE file ADD FOREIGN KEY (owner_user_id) REFERENCES users (id);
+
+CREATE OR REPLACE FUNCTION update_file_count()
+RETURNS TRIGGER AS $$
+DECLARE
+  user_id INT;
+BEGIN
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    user_id := NEW.owner_user_id;
+  ELSE
+    user_id := OLD.owner_user_id;
+  END IF;
+  UPDATE users SET number_of_files = (SELECT COUNT(*) FROM file WHERE owner_user_id = user_id) WHERE id = user_id;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_file_count
+AFTER INSERT OR UPDATE OR DELETE ON file
+FOR EACH ROW
+EXECUTE PROCEDURE update_file_count();

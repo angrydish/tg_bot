@@ -1,0 +1,1 @@
+delete from file where id=%(id)s
