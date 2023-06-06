@@ -3,9 +3,14 @@
 ### tg: @angrydish
 used: aiogram=2.25.1
 
+
+---
 to store a token you need to create a .env file in root directory and write your token
 
 ```TOKEN_TG_BOT=abcdef12355323```
+
+---
+to upload a file you just simply need to attach and send a file (documents, videos and non-compressed photos are allowed)
 
 list of commands:
 ```commandline
