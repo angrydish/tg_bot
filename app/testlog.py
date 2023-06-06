@@ -350,8 +350,8 @@ async def password(message: types.Message, state: FSMContext):
 
 inline_keyboard = InlineKeyboardMarkup(row_width=2)
 inline_keyboard.add(InlineKeyboardButton('<', callback_data='prev'), InlineKeyboardButton('>', callback_data='next'))
-inline_keyboard_next = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton('>',callback_data='next'))
-inline_keyboard_prev = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton('<',callback_data='prev'))
+inline_keyboard_next = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton('>', callback_data='next'))
+inline_keyboard_prev = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton('<', callback_data='prev'))
 @dp.callback_query_handler(lambda c: c.data, state=Auth.logged_in)
 async def process_callback_kb1btn1(callback_query: types.CallbackQuery, state: FSMContext):
     code = callback_query.data
@@ -361,51 +361,78 @@ async def process_callback_kb1btn1(callback_query: types.CallbackQuery, state: F
     #print(code)
     print(f'pages: {data.get("pages")}')
     current_page = data.get('current_page')
-    if code == "next" and data.get("current_page") != data.get("pages"):
-        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
-                                            reply_markup=inline_keyboard)
+    if code == "next":
         current_page += 1
-        await state.update_data(current_page=current_page)
-        print(1)
-    elif code == "next" and data.get('current_page') == data.get('pages'):
-        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
-                                            reply_markup=inline_keyboard_prev)
-        current_page += 1
-        await state.update_data(current_page=current_page)
-        print(2)
-    elif code == "prev" and data.get('current_page') != 1:
-        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
-                                            reply_markup=inline_keyboard)
+        if current_page != data.get("pages"):
+            await state.update_data(current_page=current_page)
+            text, xd = await get_output(callback_query.message, state, data.get('files_list'))
+            await bot.edit_message_text(message_id=callback_query.message.message_id, chat_id=callback_query.message.chat.id, text=text)
+            await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                                reply_markup=inline_keyboard)
+            print(1)
+        elif current_page == data.get('pages'):
+            await state.update_data(current_page=current_page)
+            text, xd = await get_output(callback_query.message, state, data.get('files_list'))
+            await bot.edit_message_text(message_id=callback_query.message.message_id,
+                                        chat_id=callback_query.message.chat.id, text=text)
+            await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                                reply_markup=inline_keyboard_prev)
+            print(2)
+
+    elif code == "prev":
         current_page -= 1
-        await state.update_data(current_page=current_page)
-        print(3)
-    elif code == "prev" and data.get('current_page') == 1:
-        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
-                                            reply_markup=inline_keyboard_next)
-        current_page -= 1
-        await state.update_data(current_page=current_page)
-        print(4)
+        if current_page != 1:
+            await state.update_data(current_page=current_page)
+            text, xd = await get_output(callback_query.message, state, data.get('files_list'))
+            await bot.edit_message_text(message_id=callback_query.message.message_id,
+                                        chat_id=callback_query.message.chat.id, text=text)
+            await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                                reply_markup=inline_keyboard)
+            print(3)
+        elif current_page == 1:
+            await state.update_data(current_page=current_page)
+            text, xd = await get_output(callback_query.message, state, data.get('files_list'))
+            await bot.edit_message_text(message_id=callback_query.message.message_id,
+                                        chat_id=callback_query.message.chat.id, text=text)
+            await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                                reply_markup=inline_keyboard_next)
+            print(4)
+
+    print(f'current_page: {current_page}')
 
     #await bot.send_message(callback_query.from_user.id, f'Нажата инлайн кнопка! code={code}')
 
-async def print_with_pages(message: types.Message, state: FSMContext, files_list: list):
+async def get_output(message: types.Message, state: FSMContext, files_list: list):
     #files: User_File = db.execute_all('read_all_files_without_content',params={'owner_user_id': message.from_user.id} , model=User_File)
-    pages = len(files_list) // 10
+    if len(files_list) % 10 != 0:
+        pages = (len(files_list) // 10) + 1
+    else:
+        pages = (len(files_list) // 10)
     data = await state.get_data()
     current_page = data.get('current_page')
-    await state.update_data(pages=pages)
+    await state.update_data(pages=pages, files_list=files_list)
     print(current_page)
     output_message = ""
     left_border = data.get('current_page') * 10 - 10
-    right_border = (data.get('current_page') * 10 , len(files_list) )[current_page * 10 > len(files_list)]
-    print(f'len_files: {len(files_list)}, current_page: {current_page},left: {left_border}, right: {right_border}')
+    right_border = (data.get('current_page') * 10, len(files_list) )[current_page * 10 > len(files_list)]
+    print(f'len_files: {len(files_list)}, current_page: {current_page}, pages: {pages}, left: {left_border}, right: {right_border}')
     print(right_border)
     for i in range(left_border, right_border):
         #print(files_list[i])
         #print(i)
         output_message += files_list[i]
+    return output_message, pages
+
+
+async def print_with_pages(message: types.Message, state: FSMContext, files_list: list):
+    #files: User_File = db.execute_all('read_all_files_without_content',params={'owner_user_id': message.from_user.id} , model=User_File)
+    output_message, pages = await get_output(message, state, files_list)
+    await state.update_data(output_message=output_message)
     #print(output_message)
-    await message.answer(output_message, reply_markup=inline_keyboard_next)
+    if pages > 1:
+        await message.answer(output_message, reply_markup=inline_keyboard_next)
+    else:
+        await message.answer(output_message)
 
 
 
