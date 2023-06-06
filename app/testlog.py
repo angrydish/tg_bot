@@ -42,7 +42,7 @@ db.execute_none('create_database')
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard.add(KeyboardButton("/login"))
 keyboard.add(KeyboardButton("/register"))
-keyboard.add(KeyboardButton("/delete"))
+#keyboard.add(KeyboardButton("/delete"))
 
 keyboard_cancel = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard_cancel.add("/cancel")
@@ -53,7 +53,6 @@ class Auth(StatesGroup):
     waiting_for_username = State()
     waiting_for_password = State()
     logged_in = State()
-    logged_out = State()
 
 
 class Reg(StatesGroup):
@@ -80,6 +79,7 @@ def check_and_delete():
 async def document_sent_by_user(message: types.Message, state: FSMContext):
     """
     Функция, которая принимает пользовательские файлы
+    :param state:
     :param message:
     :return nothing:
     """
@@ -102,6 +102,7 @@ async def document_sent_by_user(message: types.Message, state: FSMContext):
     # result = await bot.download_file_by_id(message.audio.file_id)
     # fail = InputFile(filename=file_name, path_or_bytesio=BytesIO(bytes(result.read()))) # получили файл, можно загрузить в бд
 
+    await message.answer('Начал загрузку файла на сервер.')
     print('1st stage')
     file = await bot.get_file(file_src.file_id)
     print('2nd stage')
@@ -114,7 +115,7 @@ async def document_sent_by_user(message: types.Message, state: FSMContext):
                     {'name': file_name, 'owner_user_id': data.get('user_id'), 'owner_telegram_id': message.from_user.id, 'content': xd,
                      'size': file_src.file_size, 'created_at': datetime.now()})
     print('uploaded')
-    await message.answer('Файл загружен!')
+    await message.answer(f'Файл {file_name} загружен!')
     # await bot.send_message(message.from_user.id, file_name)
     # await bot.send_document(message.from_user.id, document=fail)
 
@@ -160,9 +161,18 @@ async def login(message: types.Message):
     print(a, b, sep="\n")
     print(b - a)
     # Отправляем приветственное сообщение и просим ввести имя пользователя
-    msg = await message.answer("Привет! Добро пожаловать в мой бот.", reply_markup=keyboard)
+    msg = await message.answer(f"""
+    Приветствую, {message.from_user.username}. 
+    
+    Я - бот, который умеет хранить твои файлы.
+    
+    В любой момент ты можешь получить доступ к необходимому тебе файлу, и тебе не придется листать историю, чтобы найти что-то нужное.
+    """, reply_markup=keyboard)
     from_bot_messages.append(msg)
     # Переводим пользователя в состояние ожидания имени пользователя
+
+
+
 
 
 @dp.message_handler(commands="get", state=Auth.logged_in)
@@ -173,14 +183,17 @@ async def send_document(message: types.Message, state=FSMContext):
     :return nothing:
     """
     args = message.text.split(sep=" ")
+    print(args)
     data = await state.get_data()
-    if type(args[1]) == int:
+    if args[1].isdigit():
         infa: User_File = db.execute_one('check_file_owner', {'file_id': args[1]}, model=User_File)
         if infa is not None and data.get('user_id') == infa.owner_user_id:
             logging.info('sending file from server to user')
+            await message.answer("Подготовка файла. Подождите...")
             file: User_File = db.execute_one('read_file', params={'id': args[1]}, model=User_File)
             # print(bytes(file.content))
             fail = InputFile(filename=file.name, path_or_bytesio=BytesIO(bytes(file.content)))
+            await message.answer("Отправляю файл...")
             await bot.send_document(message.from_user.id, document=fail)
         else:
             await message.answer("аяяй низя так делать")
@@ -435,6 +448,33 @@ async def print_with_pages(message: types.Message, state: FSMContext, files_list
         await message.answer(output_message)
 
 
+@dp.message_handler(commands="search", state=Auth.logged_in)
+async def send_document(message: types.Message, state: FSMContext):
+    args = message.text.split(sep=" ")
+    await state.update_data(current_page=1)
+    if len(args) != 2:
+        await message.answer("Использование:\n/search <имя файла>")
+        return
+    args[1]+='%'
+    print(args)
+
+    data = await state.get_data()
+    files: list[User_File] = db.execute_all('search_file_by_string', params={'string': args[1], 'owner_user_id': data.get('user_id')},model=User_File)
+    print(f'files: {files}')
+    if len(files) != 0:
+        output_message=[]
+        for file in files:
+            output_message.append(f"""
+Файл №{file.id}
+    Имя: {file.name}
+    Размер: {file.size / 1024 / 1024} мегабайт
+    Создан: {file.created_at}
+    Чтобы скачать, введите /get {file.id}
+            """)
+        await print_with_pages(message, state, output_message)
+
+    else:
+        await message.answer("По вашему запросу ничего не найдено!")
 
 @dp.message_handler(state=Auth.logged_in, commands="list")
 async def user_logged_in(message: types.Message, state: FSMContext):
@@ -447,13 +487,13 @@ async def user_logged_in(message: types.Message, state: FSMContext):
     output_message = []
     for file in all_files:
         output_message.append(f"""
------------------------------------------
-    Файл №{file.id}
+        
+Файл №{file.id}
     Имя: {file.name}
     Размер: {file.size / 1024 / 1024 } мегабайт
     Создан: {file.created_at}
     Чтобы скачать, введите /get {file.id}
------------------------------------------""")
+""")
     if output_message:
         #await message.answer(output_message, reply_markup=inline_keyboard)
         await print_with_pages(message, state, output_message)
