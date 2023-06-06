@@ -448,6 +448,29 @@ async def print_with_pages(message: types.Message, state: FSMContext, files_list
         await message.answer(output_message)
 
 
+
+@dp.message_handler(commands="sort", state=Auth.logged_in)
+async def send_document(message: types.Message, state: FSMContext):
+    args = message.text.split(sep=" ")
+    await state.update_data(current_page=1)
+    data = await state.get_data()
+    files: list[User_File] = db.execute_all('sort_by_size', params={'owner_user_id': data.get('user_id')}, model=User_File)
+    print(f'files: {files}')
+    if len(files) != 0:
+        output_message=[]
+        for file in files:
+            output_message.append(f"""
+Файл №{file.id}
+    Имя: {file.name}
+    Размер: {file.size / 1024 / 1024} мегабайт
+    Создан: {file.created_at}
+    Чтобы скачать, введите /get {file.id}
+            """)
+        await print_with_pages(message, state, output_message)
+
+    else:
+        await message.answer("Возможно, у вас еще нет файлов!")
+
 @dp.message_handler(commands="search", state=Auth.logged_in)
 async def send_document(message: types.Message, state: FSMContext):
     args = message.text.split(sep=" ")
@@ -517,5 +540,4 @@ async def delete_messages(message: types.Message):
 # Запускаем бота
 if __name__ == "__main__":
     print('starting...')
-
     executor.start_polling(dp)
