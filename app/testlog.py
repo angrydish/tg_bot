@@ -13,7 +13,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Chat, ContentTypes, InputFile
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Chat, ContentTypes, InputFile, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from security import sha256, check_sha256_password
 
 from dotenv import load_dotenv
@@ -174,15 +174,18 @@ async def send_document(message: types.Message, state=FSMContext):
     """
     args = message.text.split(sep=" ")
     data = await state.get_data()
-    infa: User_File = db.execute_one('check_file_owner', {'file_id': args[1]}, model=User_File)
-    if data.get('user_id') == infa.owner_user_id:
-        logging.info('sending file from server to user')
-        file: User_File = db.execute_one('read_file', params={'id': args[1]}, model=User_File)
-        # print(bytes(file.content))
-        fail = InputFile(filename=file.name, path_or_bytesio=BytesIO(bytes(file.content)))
-        await bot.send_document(message.from_user.id, document=fail)
+    if type(args[1]) == int:
+        infa: User_File = db.execute_one('check_file_owner', {'file_id': args[1]}, model=User_File)
+        if infa is not None and data.get('user_id') == infa.owner_user_id:
+            logging.info('sending file from server to user')
+            file: User_File = db.execute_one('read_file', params={'id': args[1]}, model=User_File)
+            # print(bytes(file.content))
+            fail = InputFile(filename=file.name, path_or_bytesio=BytesIO(bytes(file.content)))
+            await bot.send_document(message.from_user.id, document=fail)
+        else:
+            await message.answer("аяяй низя так делать")
     else:
-        await message.answer("аяяй низя так делать")
+        await message.answer("Введите число. Пример: /get 1.")
 
 @dp.message_handler(commands="cancel", state=[Auth.waiting_for_username, Auth.waiting_for_password, Reg])
 async def cancel(message: types.Message, state: FSMContext):
@@ -345,20 +348,90 @@ async def password(message: types.Message, state: FSMContext):
 
 # -------------------------------------------authorization-end-----------------------------------------
 
+inline_keyboard = InlineKeyboardMarkup(row_width=2)
+inline_keyboard.add(InlineKeyboardButton('<', callback_data='prev'), InlineKeyboardButton('>', callback_data='next'))
+inline_keyboard_next = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton('>',callback_data='next'))
+inline_keyboard_prev = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton('<',callback_data='prev'))
+@dp.callback_query_handler(lambda c: c.data, state=Auth.logged_in)
+async def process_callback_kb1btn1(callback_query: types.CallbackQuery, state: FSMContext):
+    code = callback_query.data
+    message = callback_query.message
+    data = await state.get_data()
+    #await bot.answer_callback_query(callback_query.id, text='abcdefg')
+    #print(code)
+    print(f'pages: {data.get("pages")}')
+    current_page = data.get('current_page')
+    if code == "next" and data.get("current_page") != data.get("pages"):
+        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                            reply_markup=inline_keyboard)
+        current_page += 1
+        await state.update_data(current_page=current_page)
+        print(1)
+    elif code == "next" and data.get('current_page') == data.get('pages'):
+        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                            reply_markup=inline_keyboard_prev)
+        current_page += 1
+        await state.update_data(current_page=current_page)
+        print(2)
+    elif code == "prev" and data.get('current_page') != 1:
+        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                            reply_markup=inline_keyboard)
+        current_page -= 1
+        await state.update_data(current_page=current_page)
+        print(3)
+    elif code == "prev" and data.get('current_page') == 1:
+        await bot.edit_message_reply_markup(callback_query.message.chat.id, callback_query.message.message_id,
+                                            reply_markup=inline_keyboard_next)
+        current_page -= 1
+        await state.update_data(current_page=current_page)
+        print(4)
+
+    #await bot.send_message(callback_query.from_user.id, f'Нажата инлайн кнопка! code={code}')
+
+async def print_with_pages(message: types.Message, state: FSMContext, files_list: list):
+    #files: User_File = db.execute_all('read_all_files_without_content',params={'owner_user_id': message.from_user.id} , model=User_File)
+    pages = len(files_list) // 10
+    data = await state.get_data()
+    current_page = data.get('current_page')
+    await state.update_data(pages=pages)
+    print(current_page)
+    output_message = ""
+    left_border = data.get('current_page') * 10 - 10
+    right_border = (data.get('current_page') * 10 , len(files_list) )[current_page * 10 > len(files_list)]
+    print(f'len_files: {len(files_list)}, current_page: {current_page},left: {left_border}, right: {right_border}')
+    print(right_border)
+    for i in range(left_border, right_border):
+        #print(files_list[i])
+        #print(i)
+        output_message += files_list[i]
+    #print(output_message)
+    await message.answer(output_message, reply_markup=inline_keyboard_next)
+
+
+
 @dp.message_handler(state=Auth.logged_in, commands="list")
 async def user_logged_in(message: types.Message, state: FSMContext):
+    await state.update_data(current_page=1)
     data = await state.get_data()
     print(data.get('user_id'))
-    all_files: list[User_File] = db.execute_all('read_user_files', {'owner_user_id': data.get('user_id')}, model=User_File)
-    await message.answer("Список доступных файлов:")
+    await message.answer("Получаю список файлов...")
+    all_files: list[User_File] = db.execute_all('read_all_files_without_content', {'owner_user_id': data.get('user_id')}, model=User_File)
+    await message.reply("Список доступных файлов:")
+    output_message = []
     for file in all_files:
-        await message.answer(f"""
-        Файл №{file.id}
-        Имя: {file.name}
-        Размер: {file.size / 1024 / 1024 } мегабайт
-        Создан: {file.created_at}
-        Чтобы скачать, введите /get {file.id}
-        """)
+        output_message.append(f"""
+-----------------------------------------
+    Файл №{file.id}
+    Имя: {file.name}
+    Размер: {file.size / 1024 / 1024 } мегабайт
+    Создан: {file.created_at}
+    Чтобы скачать, введите /get {file.id}
+-----------------------------------------""")
+    if output_message:
+        #await message.answer(output_message, reply_markup=inline_keyboard)
+        await print_with_pages(message, state, output_message)
+    else:
+        await message.answer("У вас еще нет файлов. Вы можете их загрузить, просто выбрав меню загрузки файлов.")
 
 @dp.message_handler(state=Auth.logged_in, commands="logout")
 async def user_logout(message: types.Message, state: FSMContext):
