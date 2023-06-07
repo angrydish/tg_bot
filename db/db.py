@@ -35,7 +35,7 @@ class DB:
 
     def read_query_name(self, query_name) -> str:
         try:
-            with open(f'../queries/{query_name}' + '.sql', 'r') as file:
+            with open(f'./queries/{query_name}' + '.sql', 'r') as file:
                 query = file.read()
                 return str(query)
         except Exception as e:

@@ -14,7 +14,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Chat, ContentTypes, InputFile, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
-from security import sha256, check_sha256_password
+from app.security import sha256, check_sha256_password
 
 from dotenv import load_dotenv
 
