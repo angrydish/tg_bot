@@ -99,6 +99,8 @@ async def document_sent_by_user(message: types.Message, state: FSMContext):
     print(file_name)
     print(message.content_type)
     print(file_src)
+    if file_name is None or file_name == "":
+        file_name = "Default Filename"
     # print(message.audio.)
     # result = await bot.download_file_by_id(message.audio.file_id)
     # fail = InputFile(filename=file_name, path_or_bytesio=BytesIO(bytes(result.read()))) # получили файл, можно загрузить в бд
