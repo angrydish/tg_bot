@@ -29,3 +29,6 @@ Building in docker is pretty simple, all you need is to make same things as for 
 ```commandline
 docker compose up --build -d
 ```
+Telegram token must still be stored in .env file, as docker copies it inside itself
+
+To edit configuration parameters for database, edit db/config.db file and write you credentials, also docker-compose.yml file must be edited
