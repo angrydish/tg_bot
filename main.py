@@ -37,7 +37,14 @@ db = DB({
     'user': user,
     'password': password})
 print(db.execute_one('test_query'))
-#db.execute_none('create_database')
+try:
+    db.execute_none('create_database')
+except BaseException as e:
+    print("----------")
+    print("if you see this message, then db tried to die, but all went good, error:")
+    print(e)
+    print("as i said it did")
+    print("----------")
 
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard.add(KeyboardButton("/login"))
