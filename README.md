@@ -22,3 +22,10 @@ list of commands:
 /sort - sort files in descending order
 /get <number> - download a file by it's number, numbers are given in /list output
 ```
+
+---
+
+Building in docker is pretty simple, all you need is to make same things as for building not for docker, and then type
+```commandline
+docker compose up --build -d
+```
