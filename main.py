@@ -51,6 +51,7 @@ keyboard_authorized = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard_authorized.add(KeyboardButton("/list"))
 keyboard_authorized.add(KeyboardButton("/sort"))
 keyboard_authorized.add(KeyboardButton("/get"))
+keyboard_authorized.add(KeyboardButton("/search"))
 
 # Определяем класс состояний для авторизации
 class Auth(StatesGroup):
@@ -244,7 +245,7 @@ async def password_2(message: types.Message, state: FSMContext):
         try:
             db.execute_none('create_user', {'telegram_id': message.from_user.id, 'username': data.get('username'),
                                             'password': sha256(data.get('password'))})
-            msg = await message.answer(f"Поздравляю, {data.get('username')}, Вы зарегистрировались!")
+            msg = await message.answer(f"Поздравляю, {data.get('username')}, Вы зарегистрировались!", reply_markup=keyboard_authorized)
             chel: User = db.execute_one('read_user', {'username': data.get('username')}, model=User)
             await state.update_data(user_id=chel.id)
             await Auth.logged_in.set()
@@ -304,7 +305,7 @@ async def password(message: types.Message, state: FSMContext):
     print(chel)
     if chel is not None and chel.username == data.get("username") and chel.password == sha256(data.get("password")):
         # Если все верно, то отправляем сообщение об успешной авторизации и завершаем процесс
-        msg = await message.answer("Поздравляю! Вы успешно авторизовались.")
+        msg = await message.answer("Поздравляю! Вы успешно авторизовались.", reply_markup=keyboard_authorized)
         await state.update_data(user_id=chel.id)
         data = await state.get_data()
         print(data)
