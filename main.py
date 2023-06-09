@@ -129,6 +129,7 @@ async def login(message: types.Message):
     b = datetime.now()
     print(a, b, sep="\n")
     print(b - a)
+    print(f"start requested by {message.from_user.username}")
     # Отправляем приветственное сообщение и просим ввести имя пользователя
     msg = await message.answer(f"""
     Приветствую, {message.from_user.username}. 
