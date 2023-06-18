@@ -32,3 +32,15 @@ docker compose up --build -d
 Telegram token must still be stored in .env file, as docker copies it inside itself
 
 To edit configuration parameters for database, edit db/config.db file and write you credentials, also docker-compose.yml file must be edited
+
+---
+# TODO
+- [ ] Показывать пользователям сколько у них файлов
+- [ ] Удобство скачивания файлов
+- [ ] Ограничение по памяти для пользователей
+- [ ] Добавить общее количество занятого места
+- [ ] Веб админ панель
+- [ ] Ссылки на файл
+- [ ] Дудос ограничение
+- [ ] Режим оптимизации очереди для загрузки большого количества файлов
+- [x] К видео файлам приписка в виде даты, пример: video_11-06-2023-23-08-15.mp4
