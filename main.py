@@ -100,7 +100,8 @@ async def document_sent_by_user(message: types.Message, state: FSMContext):
     print(message.content_type)
     print(file_src)
     if file_name is None or file_name == "":
-        file_name = "Default Filename"
+        if message.content_type == "video":
+            file_name = "video_"+datetime.now().strftime("%d-%m-%Y-%H:%M:%S")+".mp4"
     # print(message.audio.)
     # result = await bot.download_file_by_id(message.audio.file_id)
     # fail = InputFile(filename=file_name, path_or_bytesio=BytesIO(bytes(result.read()))) # получили файл, можно загрузить в бд

@@ -1,4 +1,4 @@
-host = "localhost" # localhost
+host = "db" # localhost
 user = "postgres" #postgres
 password = "qweasdzxc1" #qweasdzxc1
 database = "postgres" #postgres
