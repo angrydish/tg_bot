@@ -21,6 +21,7 @@ list of commands:
 /search - search file by it's filename, e.g. hashcat = /search hash
 /sort - sort files in descending order
 /get <number> - download a file by it's number, numbers are given in /list output
+/delete <number> - delete a file by it's number, numbers are given in /list output
 ```
 
 ---
